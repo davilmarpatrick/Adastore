@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADASTORE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#080c10;color:#e8edf2}
+nav{background:#0e1318;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2a35}
+.logo{font-size:24px;font-weight:900;color:#00d4ff}
+.logo span{color:#ff6b35}
+.search-row{display:flex;gap:10px;max-width:600px;margin:30px auto;padding:0 20px}
+.search-input{flex:1;background:#141b22;border:1px solid #1e2a35;border-radius:10px;padding:12px 16px;color:#e8edf2;font-size:14px;outline:none}
+.search-btn{padding:12px 20px;background:#00d4ff;border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer}
+.tabs{display:flex;gap:10px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;padding:0 20px}
+.tab{padding:8px 20px;border-radius:100px;border:1px solid #1e2a35;background:transparent;color:#6b7f8e;cursor:pointer;font-size:13px}
+.tab.active{background:#00d4ff;color:#000;border-color:#00d4ff;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:0 20px 40px}
+.card{background:#0e1318;border:1px solid #1e2a35;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s}
+.card:hover{transform:translateY(-4px);border-color:#00d4ff}
+.card-img{height:160px;background:#141b22;display:flex;align-items:center;justify-content:center;font-size:56px;position:relative}
+.card-info{padding:14px}
+.card-brand{font-size:11px;color:#00d4ff;text-transform:uppercase;margin-bottom:4px}
+.card-name{font-size:13px;margin-bottom:8px;line-height:1.4}
+.card-price{font-size:18px;font-weight:700;color:#00d4ff}
+.card-comm{font-size:10px;color:#00c896;margin-top:4px}
+.source-badge{position:absolute;top:8px;right:8px;font-size:10px;padding:3px 8px;border-radius:6px}
+.amazon{background:rgba(255,165,0,.15);color:#ffa500;border:1px solid rgba(255,165,0,.3)}
+.aliexpress{background:rgba(255,60,0,.15);color:#ff3c00;border:1px solid rgba(255,60,0,.3)}
+.loading{text-align:center;padding:60px;color:#6b7f8e}
+.spinner{width:36px;height:36px;border:3px solid #1e2a35;border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.no-key{background:rgba(240,180,41,.06);border:1px solid rgba(240,180,41,.2);border-radius:12px;padding:24px;text-align:center;grid-column:1/-1}
+.no-key h3{color:#f0b429;margin-bottom:8px}
+.no-key p{color:#6b7f8e;font-size:13px;line-height:1.6}
+.api-status{display:flex;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;padding:0 20px}
+.api-pill{display:flex;align-items:center;gap:6px;background:#0e1318;border:1px solid #1e2a35;border-radius:100px;padding:5px 14px;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%}
+.green{background:#00c896}
+.red{background:#ff6b35}
+.grey{background:#6b7f8e}
+.hero{text-align:center;padding:48px 20px 32px}
+.hero h1{font-size:clamp(28px,5vw,52px);font-weight:900;margin-bottom:12px}
+.hero h1 span{color:#00d4ff}
+.hero p{color:#6b7f8e;font-size:15px;max-width:480px;margin:0 auto}
+.cart-btn{background:#141b22;border:1px solid #1e2a35;border-radius:8px;padding:8px 14px;color:#e8edf2;cursor:pointer;font-size:16px;position:relative}
+.cart-count{position:absolute;top:-6px;right:-6px;background:#ff6b35;color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0e1318;border:1px solid #1e2a35;border-radius:12px;padding:12px 20px;font-size:14px;z-index:500;transition:transform .3s;display:flex;align-items:center;gap:8px;box-shadow:0 16px 32px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+footer{background:#0e1318;border-top:1px solid #1e2a35;padding:30px 20px;text-align:center;color:#6b7f8e;font-size:13px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">ADA<span>STORE</span></div>
+  <button class="cart-btn" onclick="toggleCart()">
+    🛒 <span class="cart-count" id="cartCount">0</span>
+  </button>
+</nav>
+
+<div class="hero">
+  <h1>Électronique <span>Premium</span></h1>
+  <p>Produits réels Amazon & AliExpress — Commissions automatiques sur chaque vente</p>
+</div>
+
+<div class="api-status" id="apiStatus">
+  <div class="api-pill"><div class="dot grey" id="dotAmazon"></div><span id="lblAmazon">Vérification Amazon…</span></div>
+  <div class="api-pill"><div class="dot grey" id="dotAli"></div><span id="lblAli">Vérification AliExpress…</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchSource('amazon',this)">🛒 Amazon</button>
+  <button class="tab" onclick="switchSource('aliexpress',this)">🛍️ AliExpress</button>
+  <button class="tab" onclick="switchSource('all',this)">🌐 Les deux</button>
+</div>
+
+<div class="search-row">
+  <input class="search-input" id="searchInput" type="text" placeholder="Rechercher iPhone, Samsung…" value="smartphone" onkeydown="if(event.key==='Enter')doSearch()">
+  <button class="search-btn" onclick="doSearch()">🔍</button>
+</div>
+
+<div class="grid" id="grid">
+  <div class="loading"><div class="spinner"></div>Chargement…</div>
+</div>
+
+<footer>© 2026 ADASTORE — Affiliation Amazon & AliExpress</footer>
+
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Produit ajouté</span>
+</div>
+
+<script>
+const API = window.location.origin;
+let cart = [];
+let source = 'amazon';
+let products = [];
+
+async function checkHealth() {
+  try {
+    const r = await fetch(API+'/api/health');
+    const d = await r.json();
+    setDot('dotAmazon','lblAmazon',d.amazon,'Amazon');
+    setDot('dotAli','lblAli',d.aliexpress,'AliExpress');
+  } catch(e) {
+    setDot('dotAmazon','lblAmazon',false,'Amazon','Hors ligne');
+    setDot('dotAli','lblAli',false,'AliExpress','Hors ligne');
+  }
+}
+
+function setDot(dId,lId,ok,name,msg) {
+  document.getElementById(dId).className='dot '+(ok?'green':'red');
+  document.getElementById(lId).textContent=ok?name+' ✅':name+' — '+(msg||'Clé manquante');
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim()||'smartphone';
+  await loadProducts(q);
+}
+
+async function loadProducts(q='smartphone') {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Chargement…</div>';
+  let results = [];
+  if(source==='amazon'||source==='all') {
+    try {
+      const r = await fetch(API+'/api/amazon/search?q='+encodeURIComponent(q));
+      const d = await r.json();
+      if(d.products) results = results.concat(d.products);
+    } catch(e) {}
+  }
+  if(source==='aliexpress'||source==='all') {
+    try {
+      const r = await fetch(API+'/api/aliexpress/search?q='+encodeURIComponent(q));
+      const d = await r.json();
+      if(d.products) results = results.concat(d.products);
+    } catch(e) {}
+  }
+  products = results;
+  renderProducts(results);
+}
+
+function renderProducts(items) {
+  const grid = document.getElementById('grid');
+  if(!items.length) {
+    grid.innerHTML = '<div class="no-key"><h3>⚙️ Configuration API requise</h3><p>Ajoutez vos clés Amazon et AliExpress dans Render → Environment pour afficher de vrais produits.</p></div>';
+    return;
+  }
+  grid.innerHTML = items.map(p => {
+    const comm = Math.round((p.price||0)*(p.commission||5)/100*100)/100;
+    return `<div class="card" onclick="addToCart('${p.id}')">
+      <div class="card-img">
+        ${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='📦'">` :'📦'}
+        <span class="source-badge ${p.source}">${p.source==='amazon'?'🛒 Amazon':'🛍️ AliExpress'}</span>
+      </div>
+      <div class="card-info">
+        <div class="card-brand">${p.brand||p.source}</div>
+        <div class="card-name">${p.name.substring(0,60)}…</div>
+        <div class="card-price">${p.price?p.price.toLocaleString('fr-FR',{minimumFractionDigits:2})+' €':'Prix sur site'}</div>
+        <div class="card-comm">Commission admin: ~${p.commission||5}% (≈${comm}€)</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchSource(s,btn) {
+  source=s;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const q=document.getElementById('searchInput').value.trim()||'smartphone';
+  loadProducts(q);
+}
+
+function addToCart(id) {
+  const p=products.find(x=>String(x.id)===String(id));
+  if(!p) return;
+  const ex=cart.find(x=>x.id===p.id);
+  if(ex) ex.qty++;
+  else cart.push({...p,qty:1});
+  document.getElementById('cartCount').textContent=cart.reduce((a,b)=>a+b.qty,0);
+  showToast('🛒',p.name.substring(0,30)+' ajouté');
+}
+
+function toggleCart() {
+  const total=cart.reduce((a,b)=>a+(b.price||0)*b.qty,0);
+  showToast('🛒',cart.length?`${cart.length} article(s) — Total: ${total.toLocaleString('fr-FR',{minimumFractionDigits:2})}€`:'Panier vide');
+}
+
+function showToast(icon,msg) {
+  document.getElementById('toastIcon').textContent=icon;
+  document.getElementById('toastMsg').textContent=msg;
+  const t=document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+checkHealth();
+loadProducts('smartphone');
+</script>
+</body>
+</html>
